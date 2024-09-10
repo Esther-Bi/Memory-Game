@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>ZIM - Memory Matching Game</title>
+
+<!-- zimjs.com - JavaScript Canvas Framework -->
+<script type="module">
+
+import zim from "https://zimjs.org/cdn/016/zim";
+
+const assets = ["cat.jpg", "cow.png", "dog.png", "duck.png", "elephant.png", "giraffe.jpg", "horse.png", "lion.jpg", "mouse.jpg", "shark.jpg", "front.png"];
+const path = "closeApp/";
+
+new Frame(FIT, 1024, 768, white, white, ready);
+function ready() {
+    
+    //start pane
+    let welcome = new Pane({
+        width:500,
+        height:290,
+        modal:false,
+        displayClose:false,
+        backgroundColor: 'rgba(0, 191, 255, 0.8)',
+        content:{
+            message: "MEMORY MATCH GAME\n\nFind all pairs of identical pictures.\nGood Luck!",
+            color:white,
+            buttonScale:1,
+            buttons:[
+                {
+                    label:"start",
+                    bgColor:green,
+                    width:100,
+                    call:()=>{
+                        welcome.hide();
+                        startClicking();
+                    }
+                }
+            ]
+        }
+    });
+
+    //restart pane
+    let done = new Pane({
+        width:500,
+        height:290,
+        modal:false,
+        displayClose:false,
+        backgroundColor: 'rgba(0, 191, 255, 0.8)',
+        content:{
+            message: "WELL DONE!\nDoing good!!\n",
+            color:white,
+            buttonScale:1,
+            buttons:[
+                {
+                    label:"play again",
+                    bgColor:brown,
+                    width:200,
+                    call:()=>{
+                        zgo("code.html");
+                    }
+                }
+            ]
+        }
+    });
+
+    
+    let images = ["cat.jpg", "cow.png", "dog.png", "duck.png", "elephant.png", "giraffe.jpg", "horse.png", "lion.jpg", "mouse.jpg", "shark.jpg"];
+    images = images.concat(images); //double every picture
+
+    function creatCards(){
+        let allCards = [];
+        for (var i=0 ; i<images.length ; i++){
+            const front = new Page(170, 180, brown, brown);
+            const back = new Page(170, 180, purple, purple);
+            let card = new Flipper(front,back,null,null,null,null,null,false,false); //insert flipper
+            asset(images[i]).scaleTo(back,90,90).center(back); //insert image
+            card.answer = i%(images.length/2); //insert answer
+            allCards.push(card);
+        }
+        return allCards;
+    }
+
+    const gameCards = creatCards();
+    let cards;
+    
+    function buildCardsTile(){
+        cards = new Tile({
+            obj:shuffle(gameCards),
+            cols:5,
+            rows:4,
+            spacingH:12,
+            spacingV:12,
+            unique:true,
+        }).center();
+    }
+    
+    buildCardsTile();
+    welcome.show();
+
+    function startClicking(){
+        cards.cur(); //show clicker
+        let clicks = 0; //count for score
+        let flippedCards = 0;
+        let matches = 0;
+        let lastCard;
+        cards.on("click",function(e){
+            if (flippedCards == 2) return; //can not click
+            flippedCards++;
+            let currCard = e.target.flipper;
+            currCard.flip();
+            currCard.noMouse();
+            clicks++;
+            if (flippedCards == 2){
+                let last = lastCard;
+                cards.cur(false); //close clicker
+                if (currCard.answer != last.answer) {
+                    //do not match
+                    timeout(1.5 , ()=> {
+                        currCard.flip();
+                        currCard.mouse();
+                        last.flip();
+                        last.mouse();
+                    });
+                } else {
+                    //do match
+                    matches++;
+                    timeout(1 , ()=> {
+                        currCard.animate({
+                            props:{scale:2, rotation:360, alpha:0},
+                            time:1,
+                            ease:"backInOut",
+                        });
+                        last.animate({
+                            props:{scale:2, rotation:360, alpha:0},
+                            time:1,
+                            wait:0.3,
+                            ease:"backInOut",
+                        });
+                    });
+                }
+                if (matches == images.length/2){
+                    //restart game
+                    timeout(2 , ()=> {
+                        new Label("Your score is: " + clicks*10).center();
+                        done.show();
+                    });
+                }
+                lastCard = null;
+                timeout(1.8 , ()=> {
+                    cards.cur(); //show clicker
+                    flippedCards=0;
+                });
+            }
+            else {
+                //remember last card
+                lastCard = currCard;
+            }
+        });
+    }
+        
+} // end ready
+
+</script>
+<meta name="viewport" content="width=device-width, user-scalable=no" />
+</head>
+<body></body>
+</html>
